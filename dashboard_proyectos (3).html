@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Estado de Proyectos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:        #f0fafa;
+  --surface:   #ffffff;
+  --surface2:  #e8f8f8;
+  --border:    #c8eaea;
+  --border2:   #a0d8d8;
+  --teal-dark:  #0d7a7a;
+  --teal:       #0ea5a5;
+  --teal-mid:   #2ec4c4;
+  --teal-light: #7edddd;
+  --teal-pale:  #cdf4f4;
+  --sur-c:    #0ea5a5;
+  --norte-c:  #0891b2;
+  --centro-c: #0d9488;
+  --amber:  #f59e0b;
+  --red:    #ef4444;
+  --green:  #10b981;
+  --purple: #8b5cf6;
+  --text:   #0f3d3d;
+  --text2:  #2d6b6b;
+  --muted:  #6b9999;
+  --shadow: rgba(14,165,165,0.1);
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{ background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--text); min-height:100vh; }
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(ellipse 70% 50% at 5% 0%, rgba(0,200,200,0.07) 0%, transparent 55%),
+              radial-gradient(ellipse 50% 60% at 95% 100%, rgba(14,165,165,0.05) 0%, transparent 55%);
+}
+.wrapper{ position:relative; z-index:1; }
+
+/* HEADER */
+header{
+  background:var(--surface);
+  border-bottom:2px solid var(--border);
+  padding:18px 40px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 2px 18px var(--shadow);
+}
+.logo-area{ display:flex; align-items:center; gap:14px; }
+.logo-mark{
+  width:42px; height:42px;
+  background:linear-gradient(135deg, var(--teal), var(--teal-dark));
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Syne',sans-serif; font-weight:800; font-size:15px; color:#fff;
+  box-shadow:0 4px 14px rgba(14,165,165,0.35);
+}
+.brand-title{ font-family:'Syne',sans-serif; font-weight:700; font-size:1.1rem; color:var(--teal-dark); }
+.brand-sub{ font-size:.68rem; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-top:2px; }
+.nav-tabs{ display:flex; gap:6px; }
+.tab{
+  padding:8px 16px; border-radius:24px;
+  font-size:.73rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+  border:2px solid transparent; cursor:pointer; transition:all .22s;
+  background:transparent; font-family:'DM Sans',sans-serif;
+}
+.tab-all  { border-color:var(--teal);    color:var(--teal); }
+.tab-all.active,  .tab-all:hover  { background:var(--teal);    color:#fff; box-shadow:0 3px 12px rgba(14,165,165,.28); }
+.tab-sur  { border-color:var(--sur-c);   color:var(--sur-c); }
+.tab-sur.active,  .tab-sur:hover  { background:var(--sur-c);   color:#fff; }
+.tab-norte{ border-color:var(--norte-c); color:var(--norte-c); }
+.tab-norte.active,.tab-norte:hover{ background:var(--norte-c); color:#fff; }
+.tab-centro{ border-color:var(--centro-c);color:var(--centro-c);}
+.tab-centro.active,.tab-centro:hover{ background:var(--centro-c);color:#fff;}
+
+/* MAIN */
+.main{ padding:30px 40px 44px; }
+
+/* SECTION HEADER */
+.sec-head{
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:18px; margin-top:34px;
+}
+.sec-head:first-child{ margin-top:0; }
+.sec-bar{ width:5px; height:34px; border-radius:3px; flex-shrink:0; }
+.sec-title{ font-family:'Syne',sans-serif; font-weight:800; font-size:1.18rem; color:var(--text); }
+.sec-sub{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+.sec-pill{
+  margin-left:auto; padding:4px 14px; border-radius:20px;
+  font-size:.7rem; font-weight:700; letter-spacing:.05em;
+  color:#fff;
+}
+
+/* DIVIDER */
+.region-divider{
+  height:1.5px; margin:38px 0 0;
+  background:linear-gradient(90deg, var(--teal-pale) 0%, var(--border2) 50%, var(--teal-pale) 100%);
+  border-radius:2px;
+}
+
+/* KPI */
+.kpi-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:22px; }
+.kpi{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:16px; padding:18px 20px;
+  position:relative; overflow:hidden;
+  transition:transform .2s, box-shadow .2s;
+  box-shadow:0 2px 10px var(--shadow);
+}
+.kpi:hover{ transform:translateY(-3px); box-shadow:0 8px 22px var(--shadow); }
+.kpi::after{
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--kc, var(--teal)); border-radius:16px 16px 0 0;
+}
+.kpi-label{ font-size:.67rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:9px; }
+.kpi-value{ font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; color:var(--kc, var(--teal)); line-height:1; }
+.kpi-sub{ font-size:.67rem; color:var(--muted); margin-top:4px; }
+.kpi-icon{ position:absolute; right:14px; top:14px; font-size:1.3rem; opacity:.1; }
+
+/* CHARTS */
+.row2{ display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:16px; }
+.row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.row4{ display:grid; grid-template-columns:220px 1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+
+.card{
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:16px; padding:22px;
+  box-shadow:0 2px 10px var(--shadow);
+  transition:box-shadow .2s;
+}
+.card:hover{ box-shadow:0 6px 22px var(--shadow); }
+.card-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; }
+.card-title{ font-family:'Syne',sans-serif; font-weight:700; font-size:.9rem; color:var(--text); margin-bottom:2px; }
+.card-sub2{ font-size:.68rem; color:var(--muted); }
+.cbadge{
+  padding:3px 10px; border-radius:20px;
+  font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  background:var(--teal-pale); color:var(--teal-dark);
+  border:1px solid var(--teal-light); flex-shrink:0;
+}
+.cwrap{ position:relative; height:200px; }
+.cwrap-lg{ height:260px; }
+
+/* SUMMARY INFO CARD */
+.info-card{
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:16px; padding:22px;
+  box-shadow:0 2px 10px var(--shadow);
+}
+.ic-bar{ height:4px; border-radius:2px; margin-bottom:12px; }
+.ic-title{ font-family:'Syne',sans-serif; font-weight:800; font-size:.95rem; margin-bottom:3px; }
+.ic-sub{ font-size:.7rem; color:var(--muted); margin-bottom:12px; }
+.ic-row{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:.79rem; }
+.ic-row:last-child{ border-bottom:none; }
+.ic-val{ font-weight:700; font-family:'Syne',sans-serif; font-size:1rem; }
+
+/* MAP CARD */
+.map-card{
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:16px; padding:18px;
+  box-shadow:0 2px 10px var(--shadow);
+  display:flex; flex-direction:column; align-items:center;
+}
+
+/* TABLE */
+.tbl-section{
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:16px; padding:22px;
+  box-shadow:0 2px 10px var(--shadow);
+  margin-bottom:0;
+}
+.tbl-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.search-box{
+  background:var(--surface2); border:1.5px solid var(--border);
+  border-radius:10px; padding:8px 14px;
+  color:var(--text); font-family:'DM Sans',sans-serif; font-size:.8rem;
+  width:230px; outline:none; transition:border-color .2s;
+}
+.search-box:focus{ border-color:var(--teal); }
+.search-box::placeholder{ color:var(--muted); }
+table{ width:100%; border-collapse:collapse; }
+thead th{
+  text-align:left; font-size:.65rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); padding:9px 12px;
+  border-bottom:2px solid var(--border);
+}
+tbody tr{ transition:background .14s; }
+tbody tr:hover{ background:#e0fafa; }
+tbody td{ padding:10px 12px; font-size:.8rem; border-bottom:1px solid #f0f8f8; vertical-align:middle; }
+tbody tr:last-child td{ border-bottom:none; }
+
+/* BADGES */
+.badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:.62rem; font-weight:700; letter-spacing:.04em; }
+.b-firme      { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+.b-recurso    { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+.b-suspendida { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+.b-audiencia  { background:#cffafe; color:#164e63; border:1px solid #67e8f9; }
+.b-decision   { background:#ede9fe; color:#4c1d95; border:1px solid #c4b5fd; }
+.b-elaboracion{ background:#ffedd5; color:#7c2d12; border:1px solid #fdba74; }
+.b-default    { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
+
+.rtag{ display:inline-block; padding:2px 9px; border-radius:5px; font-size:.62rem; font-weight:600; }
+.rt-sur   { background:#ccfbf1; color:#0f766e; }
+.rt-norte { background:#cffafe; color:#0e7490; }
+.rt-centro{ background:#d1fae5; color:#065f46; }
+
+.rk-ok  { color:var(--muted); }
+.rk-warn{ color:#d97706; font-weight:500; }
+.rk-high{ color:#dc2626; font-weight:500; }
+
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+.anim{ opacity:0; animation:fadeUp .4s forwards; }
+
+footer{
+  text-align:center; padding:18px;
+  font-size:.68rem; color:var(--muted);
+  border-top:1.5px solid var(--border);
+  background:var(--surface);
+  letter-spacing:.04em;
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <div class="logo-area">
+    <div class="logo-mark">EP</div>
+    <div>
+      <div class="brand-title">Estado de Proyectos</div>
+      <div class="brand-sub">Gestión Ambiental · Predial · Construcción · 2026</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab tab-all active"    onclick="setRegion('all')">🌐 Todas</button>
+    <button class="tab tab-sur"           onclick="setRegion('Sur')">🌊 Región Sur</button>
+    <button class="tab tab-norte"         onclick="setRegion('Norte')">🏝️ Región Norte</button>
+    <button class="tab tab-centro"        onclick="setRegion('Centro')">⛰️ Región Centro</button>
+  </div>
+</header>
+
+<div class="main" id="mainContent"></div>
+
+<footer>Dashboard generado automáticamente · Estado_de_los_Proyectos44.xlsx · Mayo 2026</footer>
+</div>
+
+<script>
+/* ═══════════════════════ DATA ═══════════════════════════════════════════════ */
+const ALL = [
+  // SUR
+  {no:1,  proy:"Huila",                               tram:"Licencia",                estado:"Firme",                              auto:"ANLA", rsk:"No aplica",                    reg:"Sur"},
+  {no:2,  proy:"Refuerzo Sur Occidental Tramo 2",     tram:"Licencia",                estado:"Firme",                              auto:"ANLA", rsk:"Extorsión / Orden Público",     reg:"Sur"},
+  {no:3,  proy:"Cuestecitas – La Loma 500 kV",        tram:"Licencia",                estado:"Firme",                              auto:"ANLA", rsk:"Demoras resolución ANLA",        reg:"Sur"},
+  {no:4,  proy:"Ariguaní 200 MW – SE La Loma",        tram:"Evaluación EIA",          estado:"Elaboracion información adicional",  auto:"ANLA", rsk:"Posible archivo trámite",        reg:"Sur"},
+  // NORTE
+  {no:5,  proy:"Cuestecitas – Colectora 1 500 kV",    tram:"Licencia",                estado:"Firme",                              auto:"ANLA", rsk:"No aplica",                    reg:"Norte"},
+  {no:6,  proy:"2° circuito Cartagena Bolívar 220 kV",tram:"Licencia",                estado:"Firme",                              auto:"ANLA", rsk:"No aplica",                    reg:"Norte"},
+  // CENTRO
+  {no:7,  proy:"Norte - Chivor", tram:"Licencia",                 estado:"Firme",              auto:"ANLA", rsk:"Pendiente acción judicial",       reg:"Centro"},
+  {no:8,  proy:"Norte - Chivor", tram:"Modificación 1",           estado:"Firme",              auto:"ANLA", rsk:"No aplica",                       reg:"Centro"},
+  {no:9,  proy:"Norte - Chivor", tram:"Modificación 2",           estado:"Audiencia Pública",  auto:"ANLA", rsk:"Eventuales acciones judiciales",   reg:"Centro"},
+  {no:10, proy:"Norte - Chivor", tram:"Modificación 3",           estado:"Firme",              auto:"ANLA", rsk:"Eventuales acciones judiciales",   reg:"Centro"},
+  {no:11, proy:"Norte - Chivor", tram:"Sustracción SRF-395",      estado:"Decisión de fondo",  auto:"MADS", rsk:"Demoras MADS",                     reg:"Centro"},
+  {no:12, proy:"Norte - Chivor", tram:"Modificación Sustracción", estado:"Decisión de fondo",  auto:"MADS", rsk:"No aplica",                        reg:"Centro"},
+  {no:13, proy:"Norte - Chivor", tram:"Sustracción SRF-651",      estado:"Decisión de fondo",  auto:"MADS", rsk:"Demoras MADS",                     reg:"Centro"},
+  {no:14, proy:"Norte - Chivor", tram:"Sustracción SRF-679",      estado:"Decisión de fondo",  auto:"MADS", rsk:"No aplica",                        reg:"Centro"},
+  {no:15, proy:"Norte - Chivor", tram:"Sustracción SRF-761",      estado:"Decisión de fondo",  auto:"MADS", rsk:"No aplica",                        reg:"Centro"},
+  {no:16, proy:"Sogamoso",       tram:"Licencia",                 estado:"Firme",              auto:"ANLA", rsk:"No aplica",                        reg:"Centro"},
+  {no:17, proy:"Sogamoso",       tram:"Modificación 1",           estado:"Firme",              auto:"ANLA", rsk:"No aplica",                        reg:"Centro"},
+  {no:18, proy:"Sogamoso",       tram:"Modificación 2",           estado:"Recurso",            auto:"ANLA", rsk:"Demoras ANLA",                     reg:"Centro"},
+  {no:19, proy:"Sogamoso",       tram:"Modificación 3",           estado:"Suspendida",         auto:"ANLA", rsk:"Demoras ANLA",                     reg:"Centro"},
+  {no:20, proy:"Sogamoso",       tram:"Modificación 4",           estado:"Recurso",            auto:"ANLA", rsk:"Demoras ANLA",                     reg:"Centro"},
+  {no:21, proy:"Sogamoso",       tram:"Modificación 5",           estado:"Elaboración complemento EIA", auto:"ANLA", rsk:"No aplica", reg:"Centro"},
+];
+
+const RCFG = {
+  Sur:    { color:'#0ea5a5', emoji:'🌊', label:'Región Sur',    sub:'Huila · RSO Tramo 2 · Cuestecitas-La Loma · Ariguaní' },
+  Norte:  { color:'#0891b2', emoji:'🏝️', label:'Región Norte',  sub:'Cuestecitas-Colectora 1 · 2° Circuito Cartagena Bolívar' },
+  Centro: { color:'#0d9488', emoji:'⛰️', label:'Región Centro', sub:'Norte-Chivor · Sogamoso' },
+};
+const E_COLORS = {
+  'Firme':'#10b981','Decisión de fondo':'#8b5cf6','Recurso':'#f59e0b',
+  'Suspendida':'#ef4444','Audiencia Pública':'#06b6d4',
+  'Elaboracion información adicional':'#f97316','Elaboración complemento EIA':'#3b82f6',
+};
+const E_BADGE = {
+  'Firme':'b-firme','Recurso':'b-recurso','Suspendida':'b-suspendida',
+  'Audiencia Pública':'b-audiencia','Decisión de fondo':'b-decision',
+  'Elaboracion información adicional':'b-elaboracion',
+  'Elaboración complemento EIA':'b-elaboracion',
+};
+
+let curRegion = 'all';
+const CHARTS = {};
+
+Chart.defaults.color = '#6b9999';
+Chart.defaults.font.family = 'DM Sans';
+const TT = { backgroundColor:'#fff', titleColor:'#0f3d3d', bodyColor:'#0f3d3d', borderColor:'#c8eaea', borderWidth:1 };
+
+/* ═══════════════════ UTILS ══════════════════════════════════════════════════ */
+function gd(r){ return r==='all'?ALL:ALL.filter(d=>d.reg===r); }
+function cb(arr,k){ const m={}; arr.forEach(d=>{ m[d[k]]=(m[d[k]]||0)+1; }); return m; }
+function bc(e){ return E_BADGE[e]||'b-default'; }
+function rk(r){ if(r==='No aplica') return 'rk-ok'; if(r.match(/extors|alto|archivo/i)) return 'rk-high'; return 'rk-warn'; }
+function sh(s,n=20){ return s.length>n?s.substring(0,n-1)+'…':s; }
+function cid(r,t){ return `c_${r}_${t}`; }
+function destroy(id){ if(CHARTS[id]){ try{CHARTS[id].destroy();}catch(e){} delete CHARTS[id]; } }
+
+/* ═══════════════════ KPI BLOCK ══════════════════════════════════════════════ */
+function kpiHTML(d,col){
+  const total=d.length, firme=d.filter(x=>x.estado==='Firme').length,
+        dec=d.filter(x=>x.estado==='Decisión de fondo').length,
+        rec=d.filter(x=>x.estado==='Recurso').length,
+        risk=d.filter(x=>x.rsk!=='No aplica').length;
+  const k=(lbl,v,sub,kc,ico)=>`<div class="kpi anim" style="--kc:${kc}">
+    <div class="kpi-label">${lbl}</div><div class="kpi-value">${v}</div>
+    <div class="kpi-sub">${sub}</div><div class="kpi-icon">${ico}</div></div>`;
+  return `<div class="kpi-grid">
+    ${k('Total Trámites',total,'registros activos',col,'📋')}
+    ${k('Firmes',firme,'consolidados','#10b981','✅')}
+    ${k('Decisión de Fondo',dec,'pendientes','#8b5cf6','⚖️')}
+    ${k('Con Recurso',rec,'interpuesto','#f59e0b','📩')}
+    ${k('Con Riesgo',risk,'requieren atención','#ef4444','⚠️')}
+  </div>`;
+}
+
+/* ═══════════════════ INFO CARD ══════════════════════════════════════════════ */
+function infoCardHTML(d,col,click){
+  const firme=d.filter(x=>x.estado==='Firme').length;
+  const noRsk=d.filter(x=>x.rsk==='No aplica').length;
+  const conRsk=d.length-noRsk;
+  const pct=d.length?Math.round(firme/d.length*100):0;
+  const projs=[...new Set(d.map(x=>x.proy))];
+  const clickAttr=click?`onclick="setRegion('${click}')" style="cursor:pointer"`:'';
+  return `<div class="info-card anim" ${clickAttr}>
+    <div class="ic-bar" style="background:${col}"></div>
+    <div class="ic-title" style="color:${col}">${RCFG[click||'Sur'].emoji} ${RCFG[click||'Sur'].label}</div>
+    <div class="ic-sub">${projs.join(' · ')}</div>
+    <div class="ic-row"><span>Total Trámites</span><span class="ic-val" style="color:${col}">${d.length}</span></div>
+    <div class="ic-row"><span>Firmes</span><span class="ic-val" style="color:#10b981">${firme}</span></div>
+    <div class="ic-row"><span>% Consolidación</span><span class="ic-val" style="color:${col}">${pct}%</span></div>
+    <div class="ic-row"><span>Con Riesgo</span><span class="ic-val" style="color:#ef4444">${conRsk}</span></div>
+    ${click?`<div style="margin-top:10px;font-size:.68rem;color:var(--muted);text-align:center">Clic para ver detalle →</div>`:''}
+  </div>`;
+}
+
+/* ═══════════════════ TABLE ══════════════════════════════════════════════════ */
+function tblHTML(d,rid){
+  const rows=d.map(x=>`<tr>
+    <td style="color:var(--muted);font-size:.72rem">${x.no}</td>
+    <td style="font-weight:500;max-width:190px">${x.proy}</td>
+    <td style="color:var(--text2)">${x.tram}</td>
+    <td><span class="badge ${bc(x.estado)}">${x.estado}</span></td>
+    <td style="color:var(--text2)">${x.auto}</td>
+    <td class="${rk(x.rsk)}" style="max-width:170px;font-size:.74rem">${x.rsk}</td>
+    <td><span class="rtag rt-${x.reg.toLowerCase()}">${x.reg}</span></td>
+  </tr>`).join('');
+  return `<div style="overflow-x:auto"><table id="tbl_${rid}">
+    <thead><tr><th>#</th><th>Proyecto</th><th>Trámite</th><th>Estado</th><th>Autoridad</th><th>Riesgos</th><th>Región</th></tr></thead>
+    <tbody id="tbody_${rid}">${rows}</tbody>
+  </table></div>`;
+}
+
+function filterTable(rid){
+  const q=document.getElementById(`srch_${rid}`).value.toLowerCase();
+  const reg=rid[0].toUpperCase()+rid.slice(1);
+  const rows=gd(reg).filter(d=>
+    d.proy.toLowerCase().includes(q)||d.estado.toLowerCase().includes(q)||
+    d.tram.toLowerCase().includes(q)||d.auto.toLowerCase().includes(q)||d.rsk.toLowerCase().includes(q)
+  );
+  const tb=document.getElementById(`tbody_${rid}`);
+  if(!tb) return;
+  tb.innerHTML=rows.map(x=>`<tr>
+    <td style="color:var(--muted);font-size:.72rem">${x.no}</td>
+    <td style="font-weight:500">${x.proy}</td><td style="color:var(--text2)">${x.tram}</td>
+    <td><span class="badge ${bc(x.estado)}">${x.estado}</span></td>
+    <td style="color:var(--text2)">${x.auto}</td>
+    <td class="${rk(x.rsk)}" style="font-size:.74rem">${x.rsk}</td>
+    <td><span class="rtag rt-${x.reg.toLowerCase()}">${x.reg}</span></td>
+  </tr>`).join('');
+}
+
+/* ═══════════════════ COLOMBIA SVG ═══════════════════════════════════════════ */
+function mapSVG(){
+  return `<svg width="180" height="245" viewBox="0 0 180 245">
+    <defs>
+      <linearGradient id="gN2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#38bdf8"/><stop offset="100%" style="stop-color:#0891b2"/>
+      </linearGradient>
+      <linearGradient id="gS2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#2dd4bf"/><stop offset="100%" style="stop-color:#0ea5a5"/>
+      </linearGradient>
+      <linearGradient id="gC2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#34d399"/><stop offset="100%" style="stop-color:#0d9488"/>
+      </linearGradient>
+      <linearGradient id="gO2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#e0f2fe"/><stop offset="100%" style="stop-color:#bae6fd"/>
+      </linearGradient>
+      <filter id="glow2"><feGaussianBlur stdDeviation="2.5" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <!-- Norte -->
+    <path d="M32,14 L58,8 L88,6 L115,12 L130,22 L138,34 L128,46 L112,42 L95,46 L75,42 L56,46 L40,42 L28,32 Z"
+          fill="url(#gN2)" filter="url(#glow2)" opacity=".92"/>
+    <!-- Sur (Pacífico / Sur-Andino) -->
+    <path d="M28,32 L40,42 L37,62 L33,84 L30,108 L28,130 L30,150 L36,168 L40,185 L38,205 L44,218 L52,225 L58,218 L60,200 L56,180 L60,158 L64,135 L62,108 L64,82 L56,56 L46,42 Z"
+          fill="url(#gS2)" filter="url(#glow2)" opacity=".9"/>
+    <!-- Centro -->
+    <path d="M56,46 L75,42 L95,46 L112,42 L120,64 L118,90 L115,115 L110,140 L106,165 L100,185 L96,205 L92,218 L84,224 L76,220 L70,208 L66,188 L60,158 L64,135 L62,108 L64,82 L56,56 Z"
+          fill="url(#gC2)" filter="url(#glow2)" opacity=".93"/>
+    <!-- Llanos -->
+    <path d="M112,42 L128,46 L138,34 L150,44 L160,58 L164,82 L162,108 L156,130 L148,148 L136,155 L120,150 L115,115 L118,90 L120,64 Z"
+          fill="url(#gO2)" opacity=".75"/>
+    <!-- Sur Amazónico -->
+    <path d="M60,158 L66,188 L70,208 L76,220 L84,224 L92,218 L96,205 L100,185 L106,165 L110,140 L115,115 L120,150 L118,170 L112,188 L104,205 L96,218 L84,228 L72,230 L60,228 L50,220 L44,218 L38,205 L40,185 Z"
+          fill="url(#gO2)" opacity=".65"/>
+    <!-- Pulse Norte -->
+    <circle cx="70" cy="28" r="4.5" fill="#0891b2" opacity=".9">
+      <animate attributeName="r" values="4.5;9;4.5" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".9;.1;.9" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Pulse Sur -->
+    <circle cx="42" cy="120" r="4.5" fill="#0ea5a5" opacity=".9">
+      <animate attributeName="r" values="4.5;9;4.5" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".9;.1;.9" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Pulse Centro -->
+    <circle cx="88" cy="120" r="5" fill="#0d9488" opacity=".9">
+      <animate attributeName="r" values="5;10;5" dur="2.1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".9;.1;.9" dur="2.1s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Labels -->
+    <text x="70"  y="24"  fill="white" font-size="7.5" font-family="Syne" font-weight="800" text-anchor="middle">NORTE</text>
+    <text x="36"  y="115" fill="white" font-size="7"   font-family="Syne" font-weight="700" text-anchor="middle">SUR</text>
+    <text x="88"  y="112" fill="white" font-size="7"   font-family="Syne" font-weight="700" text-anchor="middle">CENTRO</text>
+    <text x="140" y="90"  fill="#0891b2" font-size="6.5" font-family="Syne" text-anchor="middle" opacity=".7">LLANOS</text>
+  </svg>`;
+}
+
+/* ═══════════════════ REGION BLOCK HTML ══════════════════════════════════════ */
+function regionBlockHTML(reg){
+  const cfg=RCFG[reg], d=gd(reg), col=cfg.color, rid=reg.toLowerCase();
+  return `
+  <div class="sec-head anim">
+    <div class="sec-bar" style="background:${col}"></div>
+    <div>
+      <div class="sec-title">${cfg.emoji} ${cfg.label}</div>
+      <div class="sec-sub">${cfg.sub}</div>
+    </div>
+    <div class="sec-pill" style="background:${col}">${d.length} trámites</div>
+  </div>
+  ${kpiHTML(d,col)}
+  <div class="row2">
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Estado de Trámites por Proyecto</div><div class="card-sub2">Distribución apilada</div></div>
+        <span class="cbadge">Barras</span>
+      </div>
+      <div class="cwrap cwrap-lg"><canvas id="${cid(rid,'bar')}"></canvas></div>
+    </div>
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Distribución de Estados</div><div class="card-sub2">Por porcentaje</div></div>
+        <span class="cbadge">Torta</span>
+      </div>
+      <div class="cwrap cwrap-lg"><canvas id="${cid(rid,'pie')}"></canvas></div>
+    </div>
+  </div>
+  <div class="row3">
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Tipo de Trámite</div><div class="card-sub2">Categorías</div></div>
+        <span class="cbadge">Donut</span>
+      </div>
+      <div class="cwrap"><canvas id="${cid(rid,'tram')}"></canvas></div>
+    </div>
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Autoridad Ambiental</div><div class="card-sub2">Ente regulador</div></div>
+        <span class="cbadge">Barras</span>
+      </div>
+      <div class="cwrap"><canvas id="${cid(rid,'auto')}"></canvas></div>
+    </div>
+    ${infoCardHTML(d,col,null).replace('class="info-card anim"','class="card anim"')}
+  </div>
+  <div class="tbl-section anim">
+    <div class="tbl-top">
+      <div><div class="card-title">Detalle — ${cfg.label}</div><div class="card-sub2">${d.length} registros</div></div>
+      <input class="search-box" type="text" placeholder="🔍 Buscar…" id="srch_${rid}" oninput="filterTable('${rid}')">
+    </div>
+    ${tblHTML(d,rid)}
+  </div>`;
+}
+
+/* ═══════════════════ OVERVIEW HTML ══════════════════════════════════════════ */
+function overviewHTML(){
+  return `
+  <div class="sec-head anim">
+    <div class="sec-bar"></div>
+    <div><div class="sec-title">📊 Resumen Nacional</div>
+         <div class="sec-sub">Sur · Norte · Centro — visión consolidada</div></div>
+    <div class="sec-pill" style="background:var(--teal)">${ALL.length} trámites totales</div>
+  </div>
+  ${kpiHTML(ALL,'#0ea5a5')}
+  <div class="row3">
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Trámites por Región</div><div class="card-sub2">Sur vs Norte vs Centro</div></div>
+        <span class="cbadge">Barras</span>
+      </div>
+      <div class="cwrap"><canvas id="c_all_regbar"></canvas></div>
+    </div>
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Estado General</div><div class="card-sub2">Distribución nacional</div></div>
+        <span class="cbadge">Torta</span>
+      </div>
+      <div class="cwrap"><canvas id="c_all_pie"></canvas></div>
+    </div>
+    <div class="card anim">
+      <div class="card-head">
+        <div><div class="card-title">Comparativa Regiones</div><div class="card-sub2">Radar por indicador</div></div>
+        <span class="cbadge">Radar</span>
+      </div>
+      <div class="cwrap"><canvas id="c_all_radar"></canvas></div>
+    </div>
+  </div>
+  <div class="row4">
+    <div class="map-card anim">
+      <div class="card-title" style="text-align:center;font-size:.88rem">🗺️ Colombia</div>
+      <div class="card-sub2" style="text-align:center;margin-bottom:6px">Zonas activas</div>
+      ${mapSVG()}
+    </div>
+    ${['Sur','Norte','Centro'].map(r=>infoCardHTML(gd(r),RCFG[r].color,r)).join('')}
+  </div>`;
+}
+
+/* ═══════════════════ RENDER ═════════════════════════════════════════════════ */
+function render(){
+  // destroy charts
+  Object.keys(CHARTS).forEach(k=>{ try{CHARTS[k].destroy();}catch(e){} delete CHARTS[k]; });
+  let html='';
+  if(curRegion==='all'){
+    html+=overviewHTML();
+    ['Sur','Norte','Centro'].forEach((r,i)=>{
+      if(i>0) html+=`<div class="region-divider"></div>`;
+      html+=regionBlockHTML(r);
+    });
+  } else {
+    html+=regionBlockHTML(curRegion);
+  }
+  document.getElementById('mainContent').innerHTML=html;
+  requestAnimationFrame(()=>requestAnimationFrame(buildCharts));
+}
+
+/* ═══════════════════ CHARTS ═════════════════════════════════════════════════ */
+function buildCharts(){
+  const regions = curRegion==='all'?['Sur','Norte','Centro']:[curRegion];
+  if(curRegion==='all'){ buildAllBar(); buildAllPie(); buildAllRadar(); }
+  regions.forEach(r=>{ const rid=r.toLowerCase(); buildBar(rid,r); buildPie(rid,r); buildTram(rid,r); buildAuto(rid,r); });
+}
+
+function mkChart(id,config){ const el=document.getElementById(id); if(!el) return; CHARTS[id]=new Chart(el.getContext('2d'),config); }
+
+function buildAllBar(){
+  const rs=['Sur','Norte','Centro'];
+  const estados=['Firme','Decisión de fondo','Recurso','Suspendida','Otros'];
+  const ec=['#10b981','#8b5cf6','#f59e0b','#ef4444','#94a3b8'];
+  const datasets=estados.map((e,i)=>({
+    label:e, borderRadius:5, borderSkipped:false, backgroundColor:ec[i],
+    data:rs.map(r=>{ const d=gd(r); return e==='Otros'?d.filter(x=>!['Firme','Decisión de fondo','Recurso','Suspendida'].includes(x.estado)).length:d.filter(x=>x.estado===e).length; })
+  })).filter(ds=>ds.data.some(v=>v>0));
+  mkChart('c_all_regbar',{ type:'bar', data:{ labels:rs, datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:TT },
+      scales:{ x:{stacked:true,grid:{color:'#f0fafa'},ticks:{color:'#6b9999'}}, y:{stacked:true,grid:{color:'#f0fafa'},ticks:{color:'#6b9999',stepSize:1}} }
+    }
+  });
+}
+
+function buildAllPie(){
+  const counts=cb(ALL,'estado');
+  mkChart('c_all_pie',{ type:'pie',
+    data:{ labels:Object.keys(counts), datasets:[{ data:Object.values(counts), backgroundColor:Object.keys(counts).map(k=>E_COLORS[k]||'#94a3b8'), borderColor:'#fff', borderWidth:2, hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:TT }}
+  });
+}
+
+function buildAllRadar(){
+  const cats=['Firme','Decisión','Recurso','Suspendida','Con Riesgo'];
+  const mk=r=>{ const d=gd(r); return [d.filter(x=>x.estado==='Firme').length,d.filter(x=>x.estado==='Decisión de fondo').length,d.filter(x=>x.estado==='Recurso').length,d.filter(x=>x.estado==='Suspendida').length,d.filter(x=>x.rsk!=='No aplica').length]; };
+  mkChart('c_all_radar',{ type:'radar',
+    data:{ labels:cats, datasets:[
+      { label:'Sur',    data:mk('Sur'),    borderColor:RCFG.Sur.color,    backgroundColor:RCFG.Sur.color+'22',    pointBackgroundColor:RCFG.Sur.color,    borderWidth:2 },
+      { label:'Norte',  data:mk('Norte'),  borderColor:RCFG.Norte.color,  backgroundColor:RCFG.Norte.color+'22',  pointBackgroundColor:RCFG.Norte.color,  borderWidth:2 },
+      { label:'Centro', data:mk('Centro'), borderColor:RCFG.Centro.color, backgroundColor:RCFG.Centro.color+'22', pointBackgroundColor:RCFG.Centro.color, borderWidth:2 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:TT },
+      scales:{ r:{ grid:{color:'#e0f4f4'}, pointLabels:{color:'#6b9999',font:{size:10}}, ticks:{color:'#94a3b8',backdropColor:'transparent',stepSize:1}, suggestedMin:0 }}
+    }
+  });
+}
+
+function buildBar(rid,reg){
+  const d=gd(reg), projs=[...new Set(d.map(x=>x.proy))];
+  const estados=[...new Set(d.map(x=>x.estado))];
+  const datasets=estados.map(e=>({
+    label:sh(e,18), data:projs.map(p=>d.filter(x=>x.proy===p&&x.estado===e).length),
+    backgroundColor:E_COLORS[e]||'#94a3b8', borderRadius:5, borderSkipped:false,
+  })).filter(ds=>ds.data.some(v=>v>0));
+  mkChart(cid(rid,'bar'),{ type:'bar', data:{ labels:projs.map(p=>sh(p)), datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:TT },
+      scales:{ x:{stacked:true,grid:{color:'#f0fafa'},ticks:{color:'#6b9999',font:{size:11}}}, y:{stacked:true,grid:{color:'#f0fafa'},ticks:{color:'#6b9999',stepSize:1}} }
+    }
+  });
+}
+
+function buildPie(rid,reg){
+  const d=gd(reg), counts=cb(d,'estado');
+  mkChart(cid(rid,'pie'),{ type:'pie',
+    data:{ labels:Object.keys(counts), datasets:[{ data:Object.values(counts), backgroundColor:Object.keys(counts).map(k=>E_COLORS[k]||'#94a3b8'), borderColor:'#fff', borderWidth:2, hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:{...TT, callbacks:{ label:ctx=>` ${ctx.label}: ${ctx.raw} (${((ctx.raw/d.length)*100).toFixed(0)}%)` }}}
+    }
+  });
+}
+
+function buildTram(rid,reg){
+  const d=gd(reg);
+  const simp=d.map(x=>x.tram.startsWith('Modific')?'Modificación':x.tram.toLowerCase().startsWith('sustr')?'Sustracción':x.tram);
+  const counts={}; simp.forEach(t=>{ counts[t]=(counts[t]||0)+1; });
+  const col=RCFG[reg].color;
+  const pal=[col,'#06b6d4','#34d399','#7dd3d3','#0891b2','#2ec4c4','#10b981'];
+  mkChart(cid(rid,'tram'),{ type:'doughnut',
+    data:{ labels:Object.keys(counts), datasets:[{ data:Object.values(counts), backgroundColor:pal, borderColor:'#fff', borderWidth:2, hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'56%',
+      plugins:{ legend:{ position:'bottom', labels:{font:{size:10}} }, tooltip:TT }
+    }
+  });
+}
+
+function buildAuto(rid,reg){
+  const d=gd(reg), counts=cb(d,'autoridad');
+  delete counts['No aplica'];
+  const col=RCFG[reg].color;
+  const pal=[col,'#06b6d4','#34d399'];
+  mkChart(cid(rid,'auto'),{ type:'bar',
+    data:{ labels:Object.keys(counts), datasets:[{ label:'Trámites', data:Object.values(counts), backgroundColor:Object.keys(counts).map((_,i)=>pal[i]||'#94a3b8'), borderRadius:8, borderSkipped:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{display:false}, tooltip:TT },
+      scales:{ x:{grid:{color:'#f0fafa'},ticks:{color:'#6b9999',stepSize:1}}, y:{grid:{display:false},ticks:{color:'#6b9999'}} }
+    }
+  });
+}
+
+/* ═══════════════════ TAB FILTER ═════════════════════════════════════════════ */
+function setRegion(r){
+  curRegion=r;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const map={all:'tab-all',Sur:'tab-sur',Norte:'tab-norte',Centro:'tab-centro'};
+  document.querySelector('.'+map[r]).classList.add('active');
+  render();
+}
+
+/* ═══════════════════ INIT ═══════════════════════════════════════════════════ */
+render();
+</script>
+</body>
+</html>
